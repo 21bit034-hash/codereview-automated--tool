@@ -1,0 +1,67 @@
+name: WordPress Plugin CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  # Job 1: PHP Syntax Check
+  php-lint:
+    name: 🔍 PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Check PHP Syntax
+        run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
+
+  # Job 2: WordPress Coding Standards
+  wpcs:
+    name: ✅ WPCS Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+
+      - name: Install WPCS
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run WPCS
+        run: |
+          ./vendor/bin/phpcs \
+            --standard=WordPress \
+            --extensions=php \
+            --ignore=vendor/ \
+            .
+
+  # Job 3: Plugin Structure Check
+  plugin-check:
+    name: 🔌 Plugin Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Required Files
+        run: |
+          echo "Checking plugin structure..."
+          test -f article-showcase.php && echo "✅ Main file exists" || exit 1
+          test -f readme.txt && echo "✅ Readme exists" || echo "⚠️ readme.txt missing"
+          grep -q "Plugin Name:" article-showcase.php && echo "✅ Plugin header found" || exit 1
+          grep -q "ABSPATH" article-showcase.php && echo "✅ Security check found" || exit 1
+          grep -q "@package" article-showcase.php && echo "✅ Package tag found" || exit 1
