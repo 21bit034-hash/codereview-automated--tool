@@ -43,7 +43,7 @@ jobs:
             --ignore=vendor/ \
             --report=full \
             --report-file=wpcs-results.txt \
-            . || true
+            . 
 
       # NEW - Show results in Actions log
       - name: Show WPCS Results
