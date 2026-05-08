@@ -14,7 +14,10 @@ echo "   WPCS Terminal Reporter"
 echo "================================"
 echo ""
 
-# Step 1 - Get latest workflow run ID
+# Step 1 - Wait for new run to appear
+echo "⏳ Waiting for GitHub Actions to start..."
+sleep 15
+
 echo "⏳ Fetching latest workflow run..."
 
 API_RESPONSE=$(curl -s \
