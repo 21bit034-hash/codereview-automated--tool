@@ -1,13 +1,10 @@
 name: WordPress Plugin CI
-
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-
 jobs:
-
   # Job 1: PHP Syntax Check
   php-lint:
     name: 🔍 PHP Lint
@@ -15,39 +12,53 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-
       - name: Check PHP Syntax
         run: find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
 
-  # Job 2: WordPress Coding Standards
+  # Job 2: WordPress Coding Standards (MODIFIED)
   wpcs:
     name: ✅ WPCS Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           tools: composer
-
       - name: Install WPCS
         run: composer install --prefer-dist --no-progress
 
+      # CHANGED - Save results to file
       - name: Run WPCS
         run: |
           ./vendor/bin/phpcs \
             --standard=WordPress \
             --extensions=php \
             --ignore=vendor/ \
-            .
+            --report=full \
+            --report-file=wpcs-results.txt \
+            . || true
+
+      # NEW - Show results in Actions log
+      - name: Show WPCS Results
+        run: |
+          echo "===== WPCS RESULTS ====="
+          cat wpcs-results.txt
+          echo "========================"
+
+      # NEW - Upload results as artifact
+      - name: Upload WPCS Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wpcs-results
+          path: wpcs-results.txt
 
   # Job 3: Plugin Structure Check
   plugin-check:
@@ -56,7 +67,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Check Required Files
         run: |
           echo "Checking plugin structure..."
