@@ -2,3 +2,4 @@
 test hook
 auto test
 bashrc test
+test
