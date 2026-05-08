@@ -14,18 +14,33 @@ echo "   WPCS Terminal Reporter"
 echo "================================"
 echo ""
 
-# Step 1 - Wait for new run to appear
+# Step 1 - Wait for new run to appear then get its ID
 echo "⏳ Waiting for GitHub Actions to start..."
-sleep 15
+sleep 20
 
 echo "⏳ Fetching latest workflow run..."
 
-API_RESPONSE=$(curl -s \
-  -H "Authorization: token $TOKEN" \
-  -H "Accept: application/vnd.github.v3+json" \
-  "https://api.github.com/repos/$USERNAME/$REPO/actions/runs?per_page=1")
+# Retry up to 5 times to get the newest run
+for i in 1 2 3 4 5; do
+  API_RESPONSE=$(curl -s \
+    -H "Authorization: token $TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    "https://api.github.com/repos/$USERNAME/$REPO/actions/runs?per_page=1&event=push")
 
-RUN_ID=$(echo "$API_RESPONSE" | jq -r '.workflow_runs[0].id')
+  RUN_ID=$(echo "$API_RESPONSE" | jq -r '.workflow_runs[0].id')
+  RUN_STATUS=$(echo "$API_RESPONSE" | jq -r '.workflow_runs[0].status')
+
+  echo "   Attempt $i - Run ID: $RUN_ID - Status: $RUN_STATUS"
+
+  if [ "$RUN_STATUS" != "completed" ]; then
+    echo "   New run found! Monitoring..."
+    break
+  fi
+
+  echo "   Waiting for new run to appear..."
+  sleep 10
+done
+
 echo "✅ Workflow Run ID: $RUN_ID"
 echo ""
 
@@ -57,25 +72,21 @@ done
 echo ""
 
 # Step 3 - Download artifact
-echo "⏳ Downloading WPCS results..."
+# Wait for artifact to be ready
+echo "⏳ Waiting for artifact to be ready..."
+sleep 5
 
 ARTIFACT_RESPONSE=$(curl -s \
   -H "Authorization: token $TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
   "https://api.github.com/repos/$USERNAME/$REPO/actions/runs/$RUN_ID/artifacts")
 
+ARTIFACT_COUNT=$(echo "$ARTIFACT_RESPONSE" | jq -r '.total_count')
+echo "   Found $ARTIFACT_COUNT artifact(s) for this run"
+
 ARTIFACT_URL=$(echo "$ARTIFACT_RESPONSE" | jq -r '.artifacts[0].archive_download_url')
-
-echo "   Artifact URL: $ARTIFACT_URL"
-
-curl -s -L \
-  -H "Authorization: token $TOKEN" \
-  -o wpcs-results.zip \
-  "$ARTIFACT_URL"
-
-unzip -o wpcs-results.zip -d wpcs-output > /dev/null 2>&1
-echo "✅ Results downloaded!"
-echo ""
+ARTIFACT_NAME=$(echo "$ARTIFACT_RESPONSE" | jq -r '.artifacts[0].name')
+echo "   Artifact Name: $ARTIFACT_NAME"
 
 # Step 4 - Display results
 echo "================================"
