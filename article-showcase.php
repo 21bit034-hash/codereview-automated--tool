@@ -52,9 +52,3 @@ function article_showcase_display() {
 	return $output;
 }
 add_shortcode( 'article_showcase', 'article_showcase_display' );
-function BadFunction(){
-$var="hello";
-if($var=="hello"){
-echo $var;
-}
-}

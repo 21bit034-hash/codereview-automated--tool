@@ -7,5 +7,17 @@
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "cp hooks/pre-commit .git/hooks/pre-commit",
+            "chmod +x .git/hooks/pre-commit",
+            "echo 'Git hooks installed successfully!'"
+        ],
+        "post-update-cmd": [
+            "cp hooks/pre-commit .git/hooks/pre-commit",
+            "chmod +x .git/hooks/pre-commit",
+            "echo 'Git hooks updated successfully!'"
+        ]
     }
 }
